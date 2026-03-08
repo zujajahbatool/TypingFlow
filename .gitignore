@@ -1,0 +1,4 @@
+data/typing_sessions.parquet
+*.pkl
+__pycache__/
+.env

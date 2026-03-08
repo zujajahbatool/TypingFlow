@@ -1,0 +1,50 @@
+[
+  {
+    "platform": "chrome",
+    "context": "blogging",
+    "top5_threshold_wpm": 77.9,
+    "top1_threshold_wpm": 87.5,
+    "max_wpm_ever": 119.7,
+    "min_wpm_ever": 10.0
+  },
+  {
+    "platform": "chrome",
+    "context": "chat",
+    "top5_threshold_wpm": 91.6,
+    "top1_threshold_wpm": 104.3,
+    "max_wpm_ever": 140.5,
+    "min_wpm_ever": 10.0
+  },
+  {
+    "platform": "chrome",
+    "context": "email",
+    "top5_threshold_wpm": 69.7,
+    "top1_threshold_wpm": 77.6,
+    "max_wpm_ever": 102.2,
+    "min_wpm_ever": 10.0
+  },
+  {
+    "platform": "vscode",
+    "context": "coding",
+    "top5_threshold_wpm": 57.8,
+    "top1_threshold_wpm": 66.0,
+    "max_wpm_ever": 93.2,
+    "min_wpm_ever": 10.0
+  },
+  {
+    "platform": "vscode",
+    "context": "markdown",
+    "top5_threshold_wpm": 73.4,
+    "top1_threshold_wpm": 82.4,
+    "max_wpm_ever": 109.3,
+    "min_wpm_ever": 10.0
+  },
+  {
+    "platform": "vscode",
+    "context": "terminal",
+    "top5_threshold_wpm": 46.4,
+    "top1_threshold_wpm": 53.3,
+    "max_wpm_ever": 72.8,
+    "min_wpm_ever": 10.0
+  }
+]

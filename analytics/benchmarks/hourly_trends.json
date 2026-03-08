@@ -1,0 +1,338 @@
+[
+  {
+    "hour_of_day": 0,
+    "platform": "chrome",
+    "avg_wpm": 55.69,
+    "avg_burst_wpm": 77.99,
+    "session_count": 20533
+  },
+  {
+    "hour_of_day": 0,
+    "platform": "vscode",
+    "avg_wpm": 40.03,
+    "avg_burst_wpm": 56.06,
+    "session_count": 25274
+  },
+  {
+    "hour_of_day": 1,
+    "platform": "chrome",
+    "avg_wpm": 55.7,
+    "avg_burst_wpm": 77.98,
+    "session_count": 20651
+  },
+  {
+    "hour_of_day": 1,
+    "platform": "vscode",
+    "avg_wpm": 40.05,
+    "avg_burst_wpm": 56.06,
+    "session_count": 25332
+  },
+  {
+    "hour_of_day": 2,
+    "platform": "chrome",
+    "avg_wpm": 55.84,
+    "avg_burst_wpm": 78.25,
+    "session_count": 20678
+  },
+  {
+    "hour_of_day": 2,
+    "platform": "vscode",
+    "avg_wpm": 40.2,
+    "avg_burst_wpm": 56.3,
+    "session_count": 25320
+  },
+  {
+    "hour_of_day": 3,
+    "platform": "chrome",
+    "avg_wpm": 55.71,
+    "avg_burst_wpm": 78.01,
+    "session_count": 20619
+  },
+  {
+    "hour_of_day": 3,
+    "platform": "vscode",
+    "avg_wpm": 40.13,
+    "avg_burst_wpm": 56.18,
+    "session_count": 25077
+  },
+  {
+    "hour_of_day": 4,
+    "platform": "chrome",
+    "avg_wpm": 55.71,
+    "avg_burst_wpm": 78.04,
+    "session_count": 20824
+  },
+  {
+    "hour_of_day": 4,
+    "platform": "vscode",
+    "avg_wpm": 39.95,
+    "avg_burst_wpm": 55.91,
+    "session_count": 25040
+  },
+  {
+    "hour_of_day": 5,
+    "platform": "chrome",
+    "avg_wpm": 55.71,
+    "avg_burst_wpm": 77.98,
+    "session_count": 20493
+  },
+  {
+    "hour_of_day": 5,
+    "platform": "vscode",
+    "avg_wpm": 39.99,
+    "avg_burst_wpm": 56.04,
+    "session_count": 25326
+  },
+  {
+    "hour_of_day": 6,
+    "platform": "chrome",
+    "avg_wpm": 55.71,
+    "avg_burst_wpm": 77.94,
+    "session_count": 20689
+  },
+  {
+    "hour_of_day": 6,
+    "platform": "vscode",
+    "avg_wpm": 39.84,
+    "avg_burst_wpm": 55.8,
+    "session_count": 25381
+  },
+  {
+    "hour_of_day": 7,
+    "platform": "chrome",
+    "avg_wpm": 55.64,
+    "avg_burst_wpm": 77.93,
+    "session_count": 20675
+  },
+  {
+    "hour_of_day": 7,
+    "platform": "vscode",
+    "avg_wpm": 40.02,
+    "avg_burst_wpm": 55.99,
+    "session_count": 25120
+  },
+  {
+    "hour_of_day": 8,
+    "platform": "chrome",
+    "avg_wpm": 55.72,
+    "avg_burst_wpm": 78.04,
+    "session_count": 20488
+  },
+  {
+    "hour_of_day": 8,
+    "platform": "vscode",
+    "avg_wpm": 39.95,
+    "avg_burst_wpm": 55.93,
+    "session_count": 25175
+  },
+  {
+    "hour_of_day": 9,
+    "platform": "chrome",
+    "avg_wpm": 55.92,
+    "avg_burst_wpm": 78.25,
+    "session_count": 20581
+  },
+  {
+    "hour_of_day": 9,
+    "platform": "vscode",
+    "avg_wpm": 40.03,
+    "avg_burst_wpm": 56.04,
+    "session_count": 25283
+  },
+  {
+    "hour_of_day": 10,
+    "platform": "chrome",
+    "avg_wpm": 55.61,
+    "avg_burst_wpm": 77.9,
+    "session_count": 20550
+  },
+  {
+    "hour_of_day": 10,
+    "platform": "vscode",
+    "avg_wpm": 40.03,
+    "avg_burst_wpm": 56.11,
+    "session_count": 25086
+  },
+  {
+    "hour_of_day": 11,
+    "platform": "chrome",
+    "avg_wpm": 55.63,
+    "avg_burst_wpm": 77.92,
+    "session_count": 20412
+  },
+  {
+    "hour_of_day": 11,
+    "platform": "vscode",
+    "avg_wpm": 40.08,
+    "avg_burst_wpm": 56.08,
+    "session_count": 24983
+  },
+  {
+    "hour_of_day": 12,
+    "platform": "chrome",
+    "avg_wpm": 55.52,
+    "avg_burst_wpm": 77.81,
+    "session_count": 20352
+  },
+  {
+    "hour_of_day": 12,
+    "platform": "vscode",
+    "avg_wpm": 39.91,
+    "avg_burst_wpm": 55.87,
+    "session_count": 25399
+  },
+  {
+    "hour_of_day": 13,
+    "platform": "chrome",
+    "avg_wpm": 55.6,
+    "avg_burst_wpm": 77.83,
+    "session_count": 20471
+  },
+  {
+    "hour_of_day": 13,
+    "platform": "vscode",
+    "avg_wpm": 40.01,
+    "avg_burst_wpm": 56.08,
+    "session_count": 25184
+  },
+  {
+    "hour_of_day": 14,
+    "platform": "chrome",
+    "avg_wpm": 55.58,
+    "avg_burst_wpm": 77.88,
+    "session_count": 20612
+  },
+  {
+    "hour_of_day": 14,
+    "platform": "vscode",
+    "avg_wpm": 40.12,
+    "avg_burst_wpm": 56.25,
+    "session_count": 24950
+  },
+  {
+    "hour_of_day": 15,
+    "platform": "chrome",
+    "avg_wpm": 55.56,
+    "avg_burst_wpm": 77.8,
+    "session_count": 20529
+  },
+  {
+    "hour_of_day": 15,
+    "platform": "vscode",
+    "avg_wpm": 39.99,
+    "avg_burst_wpm": 56.06,
+    "session_count": 25217
+  },
+  {
+    "hour_of_day": 16,
+    "platform": "chrome",
+    "avg_wpm": 55.58,
+    "avg_burst_wpm": 77.71,
+    "session_count": 20636
+  },
+  {
+    "hour_of_day": 16,
+    "platform": "vscode",
+    "avg_wpm": 40.05,
+    "avg_burst_wpm": 56.08,
+    "session_count": 25368
+  },
+  {
+    "hour_of_day": 17,
+    "platform": "chrome",
+    "avg_wpm": 55.64,
+    "avg_burst_wpm": 77.88,
+    "session_count": 20773
+  },
+  {
+    "hour_of_day": 17,
+    "platform": "vscode",
+    "avg_wpm": 40.0,
+    "avg_burst_wpm": 56.02,
+    "session_count": 25052
+  },
+  {
+    "hour_of_day": 18,
+    "platform": "chrome",
+    "avg_wpm": 55.67,
+    "avg_burst_wpm": 77.99,
+    "session_count": 20701
+  },
+  {
+    "hour_of_day": 18,
+    "platform": "vscode",
+    "avg_wpm": 39.88,
+    "avg_burst_wpm": 55.76,
+    "session_count": 25647
+  },
+  {
+    "hour_of_day": 19,
+    "platform": "chrome",
+    "avg_wpm": 55.69,
+    "avg_burst_wpm": 77.99,
+    "session_count": 20568
+  },
+  {
+    "hour_of_day": 19,
+    "platform": "vscode",
+    "avg_wpm": 40.13,
+    "avg_burst_wpm": 56.23,
+    "session_count": 25258
+  },
+  {
+    "hour_of_day": 20,
+    "platform": "chrome",
+    "avg_wpm": 55.7,
+    "avg_burst_wpm": 77.93,
+    "session_count": 20610
+  },
+  {
+    "hour_of_day": 20,
+    "platform": "vscode",
+    "avg_wpm": 39.96,
+    "avg_burst_wpm": 55.95,
+    "session_count": 25437
+  },
+  {
+    "hour_of_day": 21,
+    "platform": "chrome",
+    "avg_wpm": 55.55,
+    "avg_burst_wpm": 77.72,
+    "session_count": 20545
+  },
+  {
+    "hour_of_day": 21,
+    "platform": "vscode",
+    "avg_wpm": 39.9,
+    "avg_burst_wpm": 55.89,
+    "session_count": 25018
+  },
+  {
+    "hour_of_day": 22,
+    "platform": "chrome",
+    "avg_wpm": 55.62,
+    "avg_burst_wpm": 77.94,
+    "session_count": 20570
+  },
+  {
+    "hour_of_day": 22,
+    "platform": "vscode",
+    "avg_wpm": 40.08,
+    "avg_burst_wpm": 56.17,
+    "session_count": 25249
+  },
+  {
+    "hour_of_day": 23,
+    "platform": "chrome",
+    "avg_wpm": 55.61,
+    "avg_burst_wpm": 77.85,
+    "session_count": 20920
+  },
+  {
+    "hour_of_day": 23,
+    "platform": "vscode",
+    "avg_wpm": 40.1,
+    "avg_burst_wpm": 56.21,
+    "session_count": 25344
+  }
+]

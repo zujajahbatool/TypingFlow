@@ -1,0 +1,22 @@
+{
+  "accuracy": 1.0,
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 100,
+  "training_samples": 160000,
+  "feature_importance": {
+    "wpm": 0.5057,
+    "burst_wpm": 0.1867,
+    "platform_enc": 0.175,
+    "context_enc": 0.0675,
+    "consistency_score": 0.0474,
+    "pause_duration_avg": 0.0162,
+    "error_rate": 0.0012,
+    "session_duration": 0.0001,
+    "hour_of_day": 0.0001
+  },
+  "classes": [
+    "idle",
+    "thinking_pause"
+  ],
+  "description": "Predicts whether a typing pause is a productive thinking pause or genuine idle time."
+}

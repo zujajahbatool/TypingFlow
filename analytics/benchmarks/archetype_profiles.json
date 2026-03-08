@@ -1,0 +1,47 @@
+[
+  {
+    "cluster": 0,
+    "avg_wpm": 51.814,
+    "avg_burst_wpm": 72.595,
+    "avg_consistency": 0.213,
+    "avg_error_rate": 0.059,
+    "avg_pause": 2.59,
+    "archetype": "The Bursty Coder"
+  },
+  {
+    "cluster": 1,
+    "avg_wpm": 37.505,
+    "avg_burst_wpm": 52.437,
+    "avg_consistency": 0.154,
+    "avg_error_rate": 0.053,
+    "avg_pause": 5.394,
+    "archetype": "The Sprinter"
+  },
+  {
+    "cluster": 2,
+    "avg_wpm": 33.898,
+    "avg_burst_wpm": 47.058,
+    "avg_consistency": 0.136,
+    "avg_error_rate": 0.057,
+    "avg_pause": 2.643,
+    "archetype": "The Deliberate Architect"
+  },
+  {
+    "cluster": 3,
+    "avg_wpm": 67.24,
+    "avg_burst_wpm": 95.348,
+    "avg_consistency": 0.3,
+    "avg_error_rate": 0.045,
+    "avg_pause": 2.064,
+    "archetype": "The Rapid Streamer"
+  },
+  {
+    "cluster": 4,
+    "avg_wpm": 48.315,
+    "avg_burst_wpm": 67.532,
+    "avg_consistency": 0.188,
+    "avg_error_rate": 0.042,
+    "avg_pause": 2.669,
+    "archetype": "The Steady Workhorse"
+  }
+]

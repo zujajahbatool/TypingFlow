@@ -19,11 +19,14 @@ import pickle
 import json
 import numpy  as np
 import os
+import json
+from pathlib import Path
 
 # ── CONFIG ─────────────────────────────────────────────────────────────────────
 MODEL_FILE      = "models/thinking_pause_model.pkl"
 ENCODER_FILE    = "models/platform_encoder.pkl"
 BENCHMARKS_DIR  = "analytics/benchmarks"
+SESSION_HISTORY_FILE = "data/session_history.json"
 # ───────────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
@@ -54,6 +57,16 @@ archetypes   = {}
 thresholds   = {}
 hourly       = {}
 
+def load_history():
+    if Path(SESSION_HISTORY_FILE).exists():
+        with open(SESSION_HISTORY_FILE) as f:
+            return json.load(f)
+    return {}
+
+def save_history(history):
+    with open(SESSION_HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=2)
+        
 @app.on_event("startup")
 def load_assets():
     global model, platform_enc, context_enc, feature_cols
@@ -320,18 +333,12 @@ def get_user_archetype(user_id: str):
 # ── 7. SAVE SESSION ───────────────────────────────────────────────────────────
 @app.post("/session/save")
 def save_session(req: SessionRequest):
-    """
-    Called by the extension when a typing session ends.
-    In production this writes to PostgreSQL.
-    For now, we return a success response with the computed rank.
-    """
-    # Compute rank for immediate feedback
+    # ── Compute rank ──────────────────────────────────────────────────
     match = next(
         (b for b in benchmarks
          if b["platform"] == req.platform and b["context"] == req.context),
         None
     )
-
     percentile_msg = ""
     if match:
         if   req.wpm >= match["p95_wpm"]: percentile_msg = "top 5% 🔥"
@@ -339,14 +346,37 @@ def save_session(req: SessionRequest):
         elif req.wpm >= match["p25_wpm"]: percentile_msg = "above average 👍"
         else:                              percentile_msg = "keep practising 💪"
 
+    # ── Save to history file ──────────────────────────────────────────
+    history = load_history()
+    today   = __import__("datetime").date.today().isoformat()
+
+    if req.user_id not in history:
+        history[req.user_id] = {}
+
+    prev_words = history[req.user_id].get(today, 0)
+    history[req.user_id][today] = prev_words + req.words_written
+    save_history(history)
+
     return {
-        "status"   : "saved",
-        "user_id"  : req.user_id,
-        "wpm"      : req.wpm,
-        "rank"     : percentile_msg,
-        "message"  : f"Session saved! Your speed: {req.wpm} WPM — {percentile_msg}"
+        "status" : "saved",
+        "user_id": req.user_id,
+        "wpm"    : req.wpm,
+        "rank"   : percentile_msg,
+        "message": f"Session saved! Your speed: {req.wpm} WPM — {percentile_msg}"
     }
 
+# ──8. USER SESSION HISTORY (for heatmap) ────────────────────────────────────────
+@app.get("/user/history/{user_id}")
+def get_user_history(user_id: str):
+    history = load_history()
+    user_data = history.get(user_id, {})
+    return {
+        "user_id": user_id,
+        "history": [
+            {"date": date, "words": words}
+            for date, words in sorted(user_data.items())
+        ]
+    }
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RUN SERVER

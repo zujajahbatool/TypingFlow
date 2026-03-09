@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "TypingFlow AI",
+  "version": "1.0.0",
+  "description": "Intelligent typing analytics — real-time WPM, AI pause detection & global benchmarking.",
+
+  "permissions": ["storage", "alarms", "tabs"],
+
+  "host_permissions": ["http://127.0.0.1:8000/*"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "TypingFlow AI",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["dashboard.html", "dashboard.js", "chart.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

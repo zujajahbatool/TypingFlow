@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypingFlow AI</title>
+    <style>
+      /* ── MIDNIGHT CYBER THEME ─────────────────────────────────────────── */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+
+      body {
+        width: 320px;
+        background: #0a0a0a;
+        color: #f5f5f5;
+        padding: 16px;
+        overflow: hidden;
+      }
+
+      /* ── HEADER ──────────────────────────────────────────────────────── */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .logo {
+        font-size: 15px;
+        font-weight: 700;
+        color: #00f5ff;
+        letter-spacing: 1px;
+      }
+
+      .logo span {
+        color: #f5f5f5;
+        font-weight: 400;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #444;
+        transition: background 0.4s;
+      }
+      .status-dot.active {
+        background: #00f5ff;
+        box-shadow: 0 0 8px #00f5ff;
+      }
+      .status-dot.thinking {
+        background: #ffd700;
+        box-shadow: 0 0 8px #ffd700;
+        animation: pulse 1.2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ── SPEEDOMETER GAUGE ───────────────────────────────────────────── */
+      .gauge-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 16px;
+        background: #1c1c1e;
+        border-radius: 16px;
+        padding: 20px 16px 12px;
+        border: 1px solid #2a2a2a;
+      }
+
+      .gauge-wrap {
+        position: relative;
+        width: 180px;
+        height: 100px;
+        margin-bottom: 8px;
+      }
+
+      /* SVG semi-circle gauge */
+      .gauge-svg {
+        width: 180px;
+        height: 100px;
+      }
+
+      .gauge-track {
+        fill: none;
+        stroke: #2a2a2a;
+        stroke-width: 14;
+        stroke-linecap: round;
+      }
+
+      .gauge-fill {
+        fill: none;
+        stroke: #00f5ff;
+        stroke-width: 14;
+        stroke-linecap: round;
+        stroke-dasharray: 251;
+        stroke-dashoffset: 251;
+        transition:
+          stroke-dashoffset 0.5s ease,
+          stroke 0.4s ease;
+        filter: drop-shadow(0 0 6px #00f5ff);
+      }
+
+      .gauge-fill.flow-state {
+        stroke: #bf40bf;
+        filter: drop-shadow(0 0 8px #bf40bf);
+      }
+
+      /* WPM number in the centre of the gauge */
+      .wpm-display {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+      }
+
+      .wpm-number {
+        font-size: 38px;
+        font-weight: 800;
+        color: #00f5ff;
+        line-height: 1;
+        transition: color 0.4s;
+      }
+
+      .wpm-number.flow-state {
+        color: #bf40bf;
+      }
+
+      .wpm-label {
+        font-size: 11px;
+        color: #888;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      /* Gauge min/max labels */
+      .gauge-range {
+        display: flex;
+        justify-content: space-between;
+        width: 180px;
+        font-size: 10px;
+        color: #555;
+        margin-top: 2px;
+      }
+
+      /* ── AI PULSE INDICATOR ──────────────────────────────────────────── */
+      .ai-pulse-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #111;
+        border-radius: 8px;
+        padding: 8px 12px;
+        width: 100%;
+        border: 1px solid #222;
+        margin-top: 4px;
+      }
+
+      .ai-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #444;
+        flex-shrink: 0;
+        transition: background 0.4s;
+      }
+      .ai-dot.thinking {
+        background: #ffd700;
+        box-shadow: 0 0 6px #ffd700;
+        animation: pulse 1.2s infinite;
+      }
+
+      .ai-text {
+        font-size: 11px;
+        color: #888;
+      }
+      .ai-text.thinking {
+        color: #ffd700;
+      }
+
+      /* ── STATS GRID ──────────────────────────────────────────────────── */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .stat-card {
+        background: #1c1c1e;
+        border-radius: 10px;
+        padding: 10px 12px;
+        border: 1px solid #2a2a2a;
+      }
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f5f5f5;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 2px;
+      }
+
+      .stat-card.accent .stat-value {
+        color: #00f5ff;
+      }
+      .stat-card.purple .stat-value {
+        color: #bf40bf;
+      }
+
+      /* ── RANK BADGE ──────────────────────────────────────────────────── */
+      .rank-bar {
+        background: #1c1c1e;
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        border: 1px solid #2a2a2a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .rank-label {
+        font-size: 11px;
+        color: #888;
+      }
+
+      .rank-badge {
+        font-size: 12px;
+        font-weight: 700;
+        color: #ffd700;
+      }
+
+      /* ── CONTEXT TAG ─────────────────────────────────────────────────── */
+      .context-tag {
+        display: inline-block;
+        background: #00f5ff22;
+        color: #00f5ff;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid #00f5ff44;
+      }
+
+      /* ── FOOTER ──────────────────────────────────────────────────────── */
+      .footer {
+        text-align: center;
+        font-size: 10px;
+        color: #333;
+        margin-top: 4px;
+      }
+
+      /* ── IDLE STATE ──────────────────────────────────────────────────── */
+      .idle-msg {
+        text-align: center;
+        padding: 12px 0 4px;
+        font-size: 12px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HEADER -->
+    <div class="header">
+      <div class="logo">TypingFlow <span>AI</span></div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span id="contextTag" class="context-tag">idle</span>
+        <div id="statusDot" class="status-dot"></div>
+      </div>
+    </div>
+
+    <!-- SPEEDOMETER GAUGE -->
+    <div class="gauge-container">
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 180 100">
+          <!-- Track (background arc) -->
+          <path class="gauge-track" d="M 20 90 A 70 70 0 0 1 160 90" />
+          <!-- Fill (coloured arc — animated by JS) -->
+          <path
+            id="gaugeFill"
+            class="gauge-fill"
+            d="M 20 90 A 70 70 0 0 1 160 90"
+          />
+        </svg>
+        <div class="wpm-display">
+          <div id="wpmNumber" class="wpm-number">0</div>
+          <div class="wpm-label">WPM</div>
+        </div>
+      </div>
+      <div class="gauge-range"><span>0</span><span>220</span></div>
+
+      <!-- AI Pulse Bar -->
+      <div class="ai-pulse-bar">
+        <div id="aiDot" class="ai-dot"></div>
+        <span id="aiText" class="ai-text">Start typing to activate AI…</span>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+      <div class="stat-card accent">
+        <div id="burstWpm" class="stat-value">0</div>
+        <div class="stat-label">⚡ Burst WPM</div>
+      </div>
+      <div class="stat-card">
+        <div id="consistency" class="stat-value">—</div>
+        <div class="stat-label">Consistency</div>
+      </div>
+      <div class="stat-card">
+        <div id="errorRate" class="stat-value">—</div>
+        <div class="stat-label">Error Rate</div>
+      </div>
+      <div class="stat-card purple">
+        <div id="sessionTime" class="stat-value">0:00</div>
+        <div class="stat-label">Session</div>
+      </div>
+    </div>
+
+    <!-- GLOBAL RANK BAR -->
+    <div class="rank-bar">
+      <span class="rank-label" id="rankLabel">Rank vs. global community</span>
+      <span class="rank-badge" id="rankBadge">—</span>
+    </div>
+
+    <div class="footer">TypingFlow AI • No text is ever recorded</div>
+    <div style="text-align: center; margin-top: 10px">
+      <a
+        id="dashLink"
+        style="
+          color: #00f5ff;
+          font-size: 11px;
+          font-family: monospace;
+          cursor: pointer;
+          text-decoration: none;
+        "
+      >
+        📊 Open Full Dashboard →
+      </a>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

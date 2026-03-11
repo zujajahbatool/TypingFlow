@@ -2,3 +2,6 @@ data/typing_sessions.parquet
 *.pkl
 __pycache__/
 .env
+node_modules/
+extensions/vscode/typingflow-ai/out/
+extensions/vscode/typingflow-ai/.vscode-test/

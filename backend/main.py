@@ -49,10 +49,45 @@ async def verify_api_key(key: str = Depends(api_key_header)):
     if key != APP_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global model, platform_enc, context_enc, feature_cols
+    global benchmarks, archetypes, thresholds, hourly
+
+    print("\n  TypingFlow AI — Loading assets...")
+
+    # ── Load ML model ─────────────────────────────────────────────────────────
+    with open(MODEL_FILE, "rb") as f:
+        model = pickle.load(f)
+    print("  ✅ Thinking-Pause model loaded")
+
+    # ── Load encoders ─────────────────────────────────────────────────────────
+    with open(ENCODER_FILE, "rb") as f:
+        enc_data     = pickle.load(f)
+        platform_enc = enc_data["platform_enc"]
+        context_enc  = enc_data["context_enc"]
+        feature_cols = enc_data["feature_cols"]
+    print("  ✅ Encoders loaded")
+
+    # ── Load benchmark JSONs ───────────────────────────────────────────────────
+    def load_json(filename):
+        path = os.path.join(BENCHMARKS_DIR, filename)
+        with open(path) as f:
+            return json.load(f)
+
+    benchmarks = load_json("global_benchmarks.json")
+    archetypes = load_json("user_archetypes.json")
+    thresholds = load_json("top_performer_thresholds.json")
+    hourly     = load_json("hourly_trends.json")
+    print("  ✅ Benchmark data loaded")
+    print("  🚀 Server ready!\n")
+    yield
+
 app = FastAPI(
     title       = "TypingFlow AI API",
     description = "Behavioral analytics & real-time benchmarking for typing sessions.",
-    version     = "1.0.0"
+    version     = "1.0.0",
+    lifespan    = lifespan
 )
 
 ALLOWED_ORIGINS = [

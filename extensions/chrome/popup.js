@@ -27,8 +27,15 @@ const sessionTime = document.getElementById("sessionTime");
 const rankLabel = document.getElementById("rankLabel");
 const rankBadge = document.getElementById("rankBadge");
 
+let API_KEY = null; // Loaded at runtime
 
-const API_KEY = "paste-your-generated-key-here";
+// Load API key from storage on popup open
+chrome.storage.sync.get(["typingflow_api_key"], (result) => {
+  API_KEY = result.typingflow_api_key || "paste-your-generated-key-here";
+  if (API_KEY === null || API_KEY === "paste-your-generated-key-here") {
+    console.warn("[TypingFlow] API key not configured in popup.");
+  }
+});
 // ── GAUGE CONFIG ──────────────────────────────────────────────────────────────
 const GAUGE_MAX = 220;   // max WPM shown on gauge
 const GAUGE_ARC_LENGTH = 251;   // total arc length in SVG units

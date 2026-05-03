@@ -12,8 +12,8 @@ A VS Code extension for analyzing typing patterns and providing AI-powered typin
 
 ## Requirements
 
-- VS Code 1.60 or higher
-- Node.js 14.0 or higher
+- VS Code 1.85.0 or higher
+- Node.js 18.0 or higher
 
 ## Extension Settings
 

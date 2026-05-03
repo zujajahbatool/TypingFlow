@@ -196,7 +196,7 @@ function onTextChanged(event: vscode.TextDocumentChangeEvent) {
     if (isAutocomplete) {
       state.wordCount += Math.ceil(text.length / AVG_WORD_LENGTH);
       log(
-        `Autocomplete detected — "${text.slice(0, 20)}..." counted as 1 keystroke`,
+        `Autocomplete detected — "${text.slice(0, 20)}..." counted as ${keyCount} keystroke(s)`,
       );
     }
   }

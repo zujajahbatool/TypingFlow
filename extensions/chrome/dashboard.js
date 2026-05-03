@@ -2,36 +2,81 @@ const API = "http://127.0.0.1:8000";
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const tt = $("tooltip");
-const API_KEY = "paste-your-generated-key-here";
+let tt = null; // Initialized after DOM ready
+let API_KEY = null; // Loaded at runtime from chrome.storage
+
+// Initialize tooltip and API key after DOM ready
+function initializeDOM() {
+  tt = $("tooltip");
+  if (!tt) {
+    console.error("[TypingFlow] Tooltip element not found in DOM");
+  }
+}
+
+// Load API key from storage
+function initializeApiKey() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["typingflow_api_key"], (result) => {
+      API_KEY = result.typingflow_api_key || "paste-your-generated-key-here";
+      if (API_KEY === null || API_KEY === "paste-your-generated-key-here") {
+        console.error("[TypingFlow] WARNING: API key not configured in dashboard.");
+      }
+      resolve();
+    });
+  });
+}
 
 async function get(path) {
-  const r = await fetch(API + path, {
-    headers: { "X-API-Key": API_KEY }
-  });
-  return r.ok ? r.json() : null;
+  try {
+    const r = await fetch(API + path, {
+      headers: { "X-API-Key": API_KEY }
+    });
+    if (r.ok) {
+      return r.json();
+    } else {
+      console.error(`[TypingFlow] GET ${path} failed:`, r.status, r.statusText);
+      return null;
+    }
+  } catch (err) {
+    console.error(`[TypingFlow] GET ${path} error:`, err.message);
+    return null;
+  }
 }
 
 async function post(path, body) {
-  const r = await fetch(API + path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": API_KEY
-    },
-    body: JSON.stringify(body)
-  });
-  return r.ok ? r.json() : null;
+  try {
+    const r = await fetch(API + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": API_KEY
+      },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      return r.json();
+    } else {
+      console.error(`[TypingFlow] POST ${path} failed:`, r.status, r.statusText);
+      return null;
+    }
+  } catch (err) {
+    console.error(`[TypingFlow] POST ${path} error:`, err.message);
+    return null;
+  }
 }
 
 // ── TOOLTIP HELPER ───────────────────────────────────────────────────────────
 function showTip(e, text) {
+  if (!tt) return; // Guard against null tt
   tt.style.display = "block";
   tt.textContent = text;
   tt.style.left = (e.clientX + 12) + "px";
   tt.style.top = (e.clientY - 28) + "px";
 }
-function hideTip() { tt.style.display = "none"; }
+function hideTip() {
+  if (!tt) return; // Guard against null tt
+  tt.style.display = "none";
+}
 
 // ── LIVE STATS FROM EXTENSION STORAGE ────────────────────────────────────────
 function loadLiveStats() {
@@ -305,9 +350,19 @@ async function buildRankBars() {
   d.benchmarks.forEach(b => {
     // Simulate user WPM slightly above average
     const userWpm = +(b.avg_wpm * (1 + Math.random() * 0.3)).toFixed(0);
-    const pct = Math.min(99, Math.max(1,
-      ((userWpm - b.p25_wpm) / (b.p99_wpm - b.p25_wpm) * 100)
-    )).toFixed(0);
+    
+    // Guard against division by zero
+    const denom = (b.p99_wpm - b.p25_wpm);
+    let pct;
+    if (denom === 0) {
+      // Fallback when percentiles are equal
+      pct = userWpm >= b.p99_wpm ? 99 : 1;
+    } else {
+      pct = Math.min(99, Math.max(1,
+        ((userWpm - b.p25_wpm) / denom * 100)
+      ));
+    }
+    pct = pct.toFixed(0);
 
     const row = document.createElement("div");
     row.className = "rank-row";

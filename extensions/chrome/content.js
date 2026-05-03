@@ -52,7 +52,23 @@ const SESSION_RESET_MS = 60000;  // reset session after 60s of true idle
 const AUTOSAVE_INTERVAL_MS = 30000;  // autosave every 30 seconds
 const AVG_WORD_LENGTH = 5;      // standard: 5 keystrokes = 1 word
 const WPM_STD_DEV_WINDOW = 30; // for consistency score normalisation (30+ stdev = very inconsistent)
-const API_KEY = "paste-your-generated-key-here";
+let API_KEY = null; // Loaded at runtime from chrome.storage
+
+// ── RUNTIME API KEY INITIALIZATION ───────────────────────────────────────────
+function initializeApiKey() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["typingflow_api_key"], (result) => {
+      API_KEY = result.typingflow_api_key || "paste-your-generated-key-here";
+      if (API_KEY === null || API_KEY === "paste-your-generated-key-here") {
+        console.error("[TypingFlow] WARNING: API key not configured. Please set your API key in extension settings.");
+      }
+      resolve();
+    });
+  });
+}
+
+// Initialize API key on script load
+initializeApiKey();
 
 // ── CONTEXT DETECTION ─────────────────────────────────────────────────────────
 function detectContext() {
@@ -200,8 +216,12 @@ setInterval(() => {
   if (silenceDuration >= SESSION_RESET_MS && state.sessionActive) {
     console.log("[TypingFlow] Session ended (idle timeout)");
     state.sessionActive = false; // prevent duplicate saves
-    saveSession().then(() => resetSession());
-  }
+    saveSession()
+      .then(() => resetSession())
+      .catch((err) => {
+        console.error("[TypingFlow] Error saving session:", err.message);
+        resetSession(); // Reset regardless of save success
+      });
 
 }, PAUSE_CHECK_MS);
 
@@ -269,17 +289,21 @@ async function saveSession() {
       words_delta: wordsDelta,   // new field — backend accumulates this
     };
 
-    await fetch(`${API_BASE}/session/save`, {
+    const res = await fetch(`${API_BASE}/session/save`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-Key": API_KEY // Replace with your actual API key
+        "X-API-Key": API_KEY // Loaded at runtime
       },
       body: JSON.stringify(payload),
     });
 
-    state.wordsAtLastSave = state.wordCount;
-    console.log("[TypingFlow] Session saved!");
+    if (res.ok) {
+      state.wordsAtLastSave = state.wordCount;
+      console.log("[TypingFlow] Session saved!");
+    } else {
+      console.error("[TypingFlow] Session save failed:", res.status, res.statusText);
+    }
   } catch (err) {
     console.warn("[TypingFlow] Could not save session:", err.message);
   }

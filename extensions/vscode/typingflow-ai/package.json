@@ -1,11 +1,40 @@
 {
   "name": "typingflow-ai",
   "displayName": "TypingFlow AI",
-  "description": "Intelligent typing analytics for VS Code",
+  "description": "Real-time WPM tracker with AI thinking-pause detection and global benchmarking",
   "version": "1.0.0",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "publisher": "typingflowai",
+  "author": {
+    "name": "Zujajah Batool",
+    "url": "https://github.com/zujajahbatool"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zujajahbatool/TypingFlow"
+  },
+  "homepage": "https://github.com/zujajahbatool/TypingFlow#readme",
+  "galleryBanner": {
+    "color": "#0A0A0A",
+    "theme": "dark"
+  },
+  "categories": [
+    "Other",
+    "Education"
+  ],
+  "keywords": [
+    "typing",
+    "wpm",
+    "productivity",
+    "analytics",
+    "ai"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -21,11 +50,14 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
     "typescript": "^5.0.0"
   }
 }

@@ -14,33 +14,35 @@
 const API_BASE = "http://127.0.0.1:8000";
 
 // ── DOM REFERENCES ────────────────────────────────────────────────────────────
-const wpmNumber   = document.getElementById("wpmNumber");
-const gaugeFill   = document.getElementById("gaugeFill");
-const statusDot   = document.getElementById("statusDot");
-const contextTag  = document.getElementById("contextTag");
-const aiDot       = document.getElementById("aiDot");
-const aiText      = document.getElementById("aiText");
-const burstWpm    = document.getElementById("burstWpm");
+const wpmNumber = document.getElementById("wpmNumber");
+const gaugeFill = document.getElementById("gaugeFill");
+const statusDot = document.getElementById("statusDot");
+const contextTag = document.getElementById("contextTag");
+const aiDot = document.getElementById("aiDot");
+const aiText = document.getElementById("aiText");
+const burstWpm = document.getElementById("burstWpm");
 const consistency = document.getElementById("consistency");
-const errorRate   = document.getElementById("errorRate");
+const errorRate = document.getElementById("errorRate");
 const sessionTime = document.getElementById("sessionTime");
-const rankLabel   = document.getElementById("rankLabel");
-const rankBadge   = document.getElementById("rankBadge");
+const rankLabel = document.getElementById("rankLabel");
+const rankBadge = document.getElementById("rankBadge");
 
+
+const API_KEY = "paste-your-generated-key-here";
 // ── GAUGE CONFIG ──────────────────────────────────────────────────────────────
-const GAUGE_MAX        = 220;   // max WPM shown on gauge
+const GAUGE_MAX = 220;   // max WPM shown on gauge
 const GAUGE_ARC_LENGTH = 251;   // total arc length in SVG units
-const FLOW_STATE_WPM   = 80;    // above this = "flow state" (purple mode)
+const FLOW_STATE_WPM = 80;    // above this = "flow state" (purple mode)
 
 // Track last rank fetch to avoid hammering the API
-let lastRankFetch  = 0;
-let lastRankWPM    = 0;
+let lastRankFetch = 0;
+let lastRankWPM = 0;
 
 
 // ── GAUGE ANIMATION ───────────────────────────────────────────────────────────
 function updateGauge(wpm) {
   // Calculate how much of the arc to fill (0 → GAUGE_ARC_LENGTH)
-  const ratio  = Math.min(wpm / GAUGE_MAX, 1);
+  const ratio = Math.min(wpm / GAUGE_MAX, 1);
   const offset = GAUGE_ARC_LENGTH - (ratio * GAUGE_ARC_LENGTH);
 
   gaugeFill.style.strokeDashoffset = offset;
@@ -94,25 +96,25 @@ function updateUI(stats) {
 
   // ── AI Pulse indicator ────────────────────────────────────────────────────
   if (stats.isThinkingPause) {
-    aiDot.className  = "ai-dot thinking";
+    aiDot.className = "ai-dot thinking";
     aiText.className = "ai-text thinking";
     aiText.textContent = "🟡 Productive thinking pause detected";
   } else if (stats.sessionActive && wpm > 0) {
-    aiDot.className  = "ai-dot";
+    aiDot.className = "ai-dot";
     aiText.className = "ai-text";
     aiText.textContent = wpm >= FLOW_STATE_WPM
       ? "🔥 Flow state — you're in the zone!"
       : "⌨️  Tracking your typing…";
   } else {
-    aiDot.className  = "ai-dot";
+    aiDot.className = "ai-dot";
     aiText.className = "ai-text";
     aiText.textContent = "Start typing to activate AI…";
   }
 
   // ── Stat cards ────────────────────────────────────────────────────────────
-  burstWpm.textContent    = stats.burstWPM    || 0;
+  burstWpm.textContent = stats.burstWPM || 0;
   consistency.textContent = formatConsistency(stats.consistencyScore);
-  errorRate.textContent   = formatErrorRate(stats.errorRate);
+  errorRate.textContent = formatErrorRate(stats.errorRate);
   sessionTime.textContent = formatTime(stats.sessionDuration || 0);
 
   // ── Fetch global rank (throttled — only if WPM changed by 5+) ─────────────
@@ -123,7 +125,7 @@ function updateUI(stats) {
   if (wpm > 10 && stats.sessionActive && wpmChanged && cooldownPassed) {
     fetchRank(wpm, stats.context || "blogging");
     lastRankFetch = now;
-    lastRankWPM   = wpm;
+    lastRankWPM = wpm;
   }
 }
 
@@ -132,24 +134,27 @@ function updateUI(stats) {
 async function fetchRank(wpm, context) {
   try {
     const response = await fetch(`${API_BASE}/benchmarks/rank`, {
-      method  : "POST",
-      headers : { "Content-Type": "application/json" },
-      body    : JSON.stringify({
-        platform : "chrome",
-        context  : context,
-        wpm      : wpm,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": API_KEY // Replace with your actual API key
+      },
+      body: JSON.stringify({
+        platform: "chrome",
+        context: context,
+        wpm: wpm,
       }),
     });
 
     if (response.ok) {
       const data = await response.json();
       rankLabel.textContent = `Faster than ${data.faster_than_pct}% globally`;
-      rankBadge.textContent = data.label === "top 1%"  ? "Top 1% 🏆" :
-                              data.label === "top 5%"  ? "Top 5% 🔥" :
-                              data.label === "top 10%" ? "Top 10% ⚡" :
-                              data.label === "top 25%" ? "Top 25% 💪" :
-                              data.label === "above average" ? "Above Avg 👍" :
-                              "Keep going 🌱";
+      rankBadge.textContent = data.label === "top 1%" ? "Top 1% 🏆" :
+        data.label === "top 5%" ? "Top 5% 🔥" :
+          data.label === "top 10%" ? "Top 10% ⚡" :
+            data.label === "top 25%" ? "Top 25% 💪" :
+              data.label === "above average" ? "Above Avg 👍" :
+                "Keep going 🌱";
     }
   } catch (err) {
     // API not reachable — show a friendly fallback

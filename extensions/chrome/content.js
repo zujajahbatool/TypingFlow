@@ -17,54 +17,56 @@
 // ── SESSION STATE ─────────────────────────────────────────────────────────────
 let state = {
   // Keystroke tracking
-  keystrokeTimestamps : [],   // timestamps of each keypress (ms)
-  totalKeystrokes     : 0,    // all keys pressed
-  backspaceCount      : 0,    // backspace presses
-  wordCount           : 0,    // spaces + enters = word boundaries
+  keystrokeTimestamps: [],   // timestamps of each keypress (ms)
+  totalKeystrokes: 0,    // all keys pressed
+  backspaceCount: 0,    // backspace presses
+  wordCount: 0,    // spaces + enters = word boundaries
+  wordsAtLastSave: 0,   // fix issue #9: track checkpoint for delta sends
 
   // WPM tracking
-  currentWPM          : 0,
-  burstWPM            : 0,    // highest WPM recorded in session
-  wpmHistory          : [],   // rolling WPM readings
+  currentWPM: 0,
+  burstWPM: 0,    // highest WPM recorded in session
+  wpmHistory: [],   // rolling WPM readings
 
   // Session timing
-  sessionStart        : null, // when the session began
-  lastKeystrokeTime   : null, // when the last key was pressed
-  sessionActive       : false,
+  sessionStart: null, // when the session began
+  lastKeystrokeTime: null, // when the last key was pressed
+  sessionActive: false,
 
   // Pause tracking
-  pauseStartTime      : null,
+  pauseStartTime: null,
   currentPauseDuration: 0,
-  isThinkingPause     : false,
+  isThinkingPause: false,
 
   // Context detection
-  platform            : "chrome",
-  context             : detectContext(),
+  platform: "chrome",
+  context: detectContext(),
 };
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const API_BASE          = "http://127.0.0.1:8000";
-const WPM_WINDOW_MS     = 5000;   // calculate WPM over last 5 seconds
-const PAUSE_CHECK_MS    = 1000;   // check for pauses every 1 second
-const MIN_PAUSE_MS      = 1500;   // pauses shorter than this are ignored
-const SESSION_RESET_MS  = 60000;  // reset session after 60s of true idle
+const API_BASE = "http://127.0.0.1:8000";
+const WPM_WINDOW_MS = 5000;   // calculate WPM over last 5 seconds
+const PAUSE_CHECK_MS = 1000;   // check for pauses every 1 second
+const MIN_PAUSE_MS = 1500;   // pauses shorter than this are ignored
+const SESSION_RESET_MS = 60000;  // reset session after 60s of true idle
 const AUTOSAVE_INTERVAL_MS = 30000;  // autosave every 30 seconds
-const AVG_WORD_LENGTH   = 5;      // standard: 5 keystrokes = 1 word
-
+const AVG_WORD_LENGTH = 5;      // standard: 5 keystrokes = 1 word
+const WPM_STD_DEV_WINDOW = 30; // for consistency score normalisation (30+ stdev = very inconsistent)
+const API_KEY = "paste-your-generated-key-here";
 
 // ── CONTEXT DETECTION ─────────────────────────────────────────────────────────
 function detectContext() {
   const hostname = window.location.hostname;
 
-  if (hostname.includes("github.com"))       return "coding";
+  if (hostname.includes("github.com")) return "coding";
   if (hostname.includes("stackoverflow.com")) return "coding";
-  if (hostname.includes("medium.com"))        return "blogging";
-  if (hostname.includes("wordpress.com"))     return "blogging";
-  if (hostname.includes("web.whatsapp.com"))  return "chat";
+  if (hostname.includes("medium.com")) return "blogging";
+  if (hostname.includes("wordpress.com")) return "blogging";
+  if (hostname.includes("web.whatsapp.com")) return "chat";
   if (hostname.includes("twitter.com") ||
-      hostname.includes("x.com"))             return "chat";
-  if (hostname.includes("mail.google.com"))   return "email";
-  if (hostname.includes("docs.google.com"))   return "blogging";
+    hostname.includes("x.com")) return "chat";
+  if (hostname.includes("mail.google.com")) return "email";
+  if (hostname.includes("docs.google.com")) return "blogging";
   return "blogging"; // default
 }
 
@@ -73,19 +75,19 @@ function detectContext() {
 document.addEventListener("keydown", (event) => {
   const now = Date.now();
 
-// ── IGNORE non-typing keys ──────────────────────────────────────
-  const ignored = ["Control","Alt","Meta","Shift","CapsLock",
-                   "Tab","Escape","ArrowUp","ArrowDown",
-                   "ArrowLeft","ArrowRight","F1","F2","F3",
-                   "F4","F5","F6","F7","F8","F9","F10",
-                   "F11","F12","Home","End","PageUp","PageDown"];
+  // ── IGNORE non-typing keys ──────────────────────────────────────
+  const ignored = ["Control", "Alt", "Meta", "Shift", "CapsLock",
+    "Tab", "Escape", "ArrowUp", "ArrowDown",
+    "ArrowLeft", "ArrowRight", "F1", "F2", "F3",
+    "F4", "F5", "F6", "F7", "F8", "F9", "F10",
+    "F11", "F12", "Home", "End", "PageUp", "PageDown"];
   if (ignored.includes(event.key)) return;
   if (event.ctrlKey || event.altKey || event.metaKey) return;
 
   // ── Start session on first keystroke ───────────────────────────────────────
   if (!state.sessionActive) {
-    state.sessionStart   = now;
-    state.sessionActive  = true;
+    state.sessionStart = now;
+    state.sessionActive = true;
     console.log("[TypingFlow] Session started");
   }
 
@@ -93,8 +95,8 @@ document.addEventListener("keydown", (event) => {
   if (state.pauseStartTime !== null) {
     const pauseDuration = (now - state.pauseStartTime) / 1000;
     state.currentPauseDuration = pauseDuration;
-    state.pauseStartTime       = null;
-    state.isThinkingPause      = false;
+    state.pauseStartTime = null;
+    state.isThinkingPause = false;
   }
 
   // ── Track backspaces separately ───────────────────────────────────────────
@@ -107,19 +109,23 @@ document.addEventListener("keydown", (event) => {
     state.wordCount++;
   }
 
-  // ── Record keystroke timestamp ────────────────────────────────────────────
-  state.keystrokeTimestamps.push(now);
-  state.totalKeystrokes++;
+  const recentDeltaMs = state.keystrokeTimestamps.length
+    ? now - state.keystrokeTimestamps[state.keystrokeTimestamps.length - 1]
+    : Infinity;
+  const isBurst = recentDeltaMs < 30;   // paste / autocomplete heuristic
+
+  if (!isBurst) {
+    state.keystrokeTimestamps.push(now);
+    state.totalKeystrokes++;
+  }
+  // Always update the last-seen time so pause detection works correctly.
   state.lastKeystrokeTime = now;
 
-  // Keep only last 10 seconds of timestamps to save memory
-  const cutoff = now - 10000;
+  // Keep only the last 10 s of timestamps to bound memory usage
+  const cutoff = now - 10_000;
   state.keystrokeTimestamps = state.keystrokeTimestamps.filter(t => t > cutoff);
 
-  // ── Recalculate WPM ───────────────────────────────────────────────────────
   updateWPM(now);
-
-  // ── Broadcast updated stats to popup ─────────────────────────────────────
   broadcastStats();
 });
 
@@ -127,13 +133,10 @@ document.addEventListener("keydown", (event) => {
 // ── WPM CALCULATION ───────────────────────────────────────────────────────────
 function updateWPM(now) {
   // Count keystrokes in the last WPM_WINDOW_MS milliseconds
-  const windowStart    = now - WPM_WINDOW_MS;
-  const recentKeys     = state.keystrokeTimestamps.filter(t => t >= windowStart);
-  const keysPerWindow  = recentKeys.length;
-
-  // Convert to WPM: (keystrokes / avg_word_length) / (window_minutes)
-  const windowMinutes  = WPM_WINDOW_MS / 60000;
-  const wpm            = Math.round((keysPerWindow / AVG_WORD_LENGTH) / windowMinutes);
+  const windowStart = now - WPM_WINDOW_MS;
+  const recentKeys = state.keystrokeTimestamps.filter(t => t >= windowStart);
+  const windowMinutes = WPM_WINDOW_MS / 60000;
+  const wpm = Math.round((recentKeys.length / AVG_WORD_LENGTH) / windowMinutes);
 
   state.currentWPM = wpm;
 
@@ -160,12 +163,8 @@ function calculateConsistency() {
   const mean = state.wpmHistory.reduce((a, b) => a + b, 0) / state.wpmHistory.length;
   const variance = state.wpmHistory.reduce((sum, v) =>
     sum + Math.pow(v - mean, 2), 0) / state.wpmHistory.length;
-  const stdDev = Math.sqrt(variance);
-
-  // Lower stdDev = more consistent
-  // Normalise to 0–1 range (stdDev of 0 = 1.0, stdDev of 30+ = ~0)
-  const consistency = Math.max(0, 1 - (stdDev / 30));
-  return Math.round(consistency * 100) / 100;
+  // Use named constant (fixes minor issue)
+  return Math.round(Math.max(0, 1 - Math.sqrt(variance) / WPM_STD_DEV_WINDOW) * 100) / 100;
 }
 
 
@@ -188,7 +187,7 @@ function getSessionDuration() {
 setInterval(() => {
   if (!state.sessionActive || !state.lastKeystrokeTime) return;
 
-  const now           = Date.now();
+  const now = Date.now();
   const silenceDuration = now - state.lastKeystrokeTime;
 
   // ── Pause just started ────────────────────────────────────────────────────
@@ -200,8 +199,8 @@ setInterval(() => {
   // ── True idle — reset session ─────────────────────────────────────────────
   if (silenceDuration >= SESSION_RESET_MS && state.sessionActive) {
     console.log("[TypingFlow] Session ended (idle timeout)");
-    saveSession();
-    resetSession();
+    state.sessionActive = false; // prevent duplicate saves
+    saveSession().then(() => resetSession());
   }
 
 }, PAUSE_CHECK_MS);
@@ -211,28 +210,31 @@ setInterval(() => {
 async function checkIfThinkingPause(pauseDurationSeconds) {
   try {
     const payload = {
-      platform          : state.platform,
-      context           : state.context,
-      wpm               : state.currentWPM,
-      burst_wpm         : state.burstWPM,
-      consistency_score : calculateConsistency(),
-      error_rate        : calculateErrorRate(),
-      pause_duration    : pauseDurationSeconds,
-      session_duration  : getSessionDuration(),
-      hour_of_day       : new Date().getHours(),
+      platform: state.platform,
+      context: state.context,
+      wpm: state.currentWPM,
+      burst_wpm: state.burstWPM,
+      consistency_score: calculateConsistency(),
+      error_rate: calculateErrorRate(),
+      pause_duration: pauseDurationSeconds,
+      session_duration: getSessionDuration(),
+      hour_of_day: new Date().getHours(),
     };
 
     const response = await fetch(`${API_BASE}/predict/pause`, {
-      method  : "POST",
-      headers : { "Content-Type": "application/json" },
-      body    : JSON.stringify(payload),
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": API_KEY, // Replace with your actual API key
+      },
+      body: JSON.stringify(payload),
     });
 
     if (response.ok) {
-      const result          = await response.json();
+      const result = await response.json();
       state.isThinkingPause = result.is_thinking;
-      console.log(`[TypingFlow] Pause detected: ${result.pause_label} `+
-                  `(${(result.confidence * 100).toFixed(0)}% confidence)`);
+      console.log(`[TypingFlow] Pause detected: ${result.pause_label} ` +
+        `(${(result.confidence * 100).toFixed(0)}% confidence)`);
 
       // Notify popup about the pause state
       broadcastStats();
@@ -248,27 +250,35 @@ async function checkIfThinkingPause(pauseDurationSeconds) {
 async function saveSession() {
   if (state.wordCount < 10) return; // ignore very short sessions
 
+  const wordsDelta = state.wordCount - state.wordsAtLastSave;
+  if (wordsDelta <= 0) return; // avoid saving 0 word deltas
+
   try {
     const userId = await getUserId();
     const payload = {
-      user_id           : userId,
-      platform          : state.platform,
-      context           : state.context,
-      wpm               : state.currentWPM,
-      burst_wpm         : state.burstWPM,
-      consistency_score : calculateConsistency(),
-      error_rate        : calculateErrorRate(),
+      user_id: userId,
+      platform: state.platform,
+      context: state.context,
+      wpm: state.currentWPM,
+      burst_wpm: state.burstWPM,
+      consistency_score: calculateConsistency(),
+      error_rate: calculateErrorRate(),
       pause_duration_avg: state.currentPauseDuration,
-      session_duration  : getSessionDuration(),
-      words_written     : state.wordCount,
+      session_duration: getSessionDuration(),
+      words_written: state.wordCount,
+      words_delta: wordsDelta,   // new field — backend accumulates this
     };
 
     await fetch(`${API_BASE}/session/save`, {
-      method  : "POST",
-      headers : { "Content-Type": "application/json" },
-      body    : JSON.stringify(payload),
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": API_KEY // Replace with your actual API key
+      },
+      body: JSON.stringify(payload),
     });
 
+    state.wordsAtLastSave = state.wordCount;
     console.log("[TypingFlow] Session saved!");
   } catch (err) {
     console.warn("[TypingFlow] Could not save session:", err.message);
@@ -284,7 +294,7 @@ async function getUserId() {
         resolve(result.typingflow_user_id);
       } else {
         // Generate a new random user ID
-        const newId = "usr_" + Math.random().toString(36).substr(2, 9);
+        const newId = "usr_" + crypto.randomUUID().replace(/-/g, "").slice(0, 9);
         chrome.storage.local.set({ typingflow_user_id: newId });
         resolve(newId);
       }
@@ -296,15 +306,15 @@ async function getUserId() {
 // ── BROADCAST STATS TO POPUP ──────────────────────────────────────────────────
 function broadcastStats() {
   const stats = {
-    currentWPM        : state.currentWPM,
-    burstWPM          : state.burstWPM,
-    consistencyScore  : calculateConsistency(),
-    errorRate         : calculateErrorRate(),
-    sessionDuration   : getSessionDuration(),
-    wordCount         : state.wordCount,
-    isThinkingPause   : state.isThinkingPause,
-    context           : state.context,
-    sessionActive     : state.sessionActive,
+    currentWPM: state.currentWPM,
+    burstWPM: state.burstWPM,
+    consistencyScore: calculateConsistency(),
+    errorRate: calculateErrorRate(),
+    sessionDuration: getSessionDuration(),
+    wordCount: state.wordCount,
+    isThinkingPause: state.isThinkingPause,
+    context: state.context,
+    sessionActive: state.sessionActive,
   };
 
   // Send to popup via Chrome runtime messaging
@@ -319,19 +329,20 @@ function broadcastStats() {
 
 // ── RESET SESSION ─────────────────────────────────────────────────────────────
 function resetSession() {
-  state.keystrokeTimestamps  = [];
-  state.totalKeystrokes      = 0;
-  state.backspaceCount       = 0;
-  state.wordCount            = 0;
-  state.currentWPM           = 0;
-  state.burstWPM             = 0;
-  state.wpmHistory           = [];
-  state.sessionStart         = null;
-  state.lastKeystrokeTime    = null;
-  state.sessionActive        = false;
-  state.pauseStartTime       = null;
+  state.keystrokeTimestamps = [];
+  state.totalKeystrokes = 0;
+  state.backspaceCount = 0;
+  state.wordCount = 0;
+  state.wordsAtLastSave = 0;
+  state.currentWPM = 0;
+  state.burstWPM = 0;
+  state.wpmHistory = [];
+  state.sessionStart = null;
+  state.lastKeystrokeTime = null;
+  state.sessionActive = false;
+  state.pauseStartTime = null;
   state.currentPauseDuration = 0;
-  state.isThinkingPause      = false;
+  state.isThinkingPause = false;
 }
 
 // ── AUTOSAVE EVERY 30 SECONDS ─────────────────────────────────────────────────

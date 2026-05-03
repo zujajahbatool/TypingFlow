@@ -1,33 +1,35 @@
 const API = "http://127.0.0.1:8000";
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
-const $  = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
 const tt = $("tooltip");
+const API_KEY = "paste-your-generated-key-here";
 
 async function get(path) {
-  try {
-    const r = await fetch(API + path);
-    return r.ok ? r.json() : null;
-  } catch { return null; }
+  const r = await fetch(API + path, {
+    headers: { "X-API-Key": API_KEY }
+  });
+  return r.ok ? r.json() : null;
 }
 
 async function post(path, body) {
-  try {
-    const r = await fetch(API + path, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
-    return r.ok ? r.json() : null;
-  } catch { return null; }
+  const r = await fetch(API + path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY
+    },
+    body: JSON.stringify(body)
+  });
+  return r.ok ? r.json() : null;
 }
 
 // ── TOOLTIP HELPER ───────────────────────────────────────────────────────────
 function showTip(e, text) {
   tt.style.display = "block";
-  tt.textContent   = text;
-  tt.style.left    = (e.clientX + 12) + "px";
-  tt.style.top     = (e.clientY - 28) + "px";
+  tt.textContent = text;
+  tt.style.left = (e.clientX + 12) + "px";
+  tt.style.top = (e.clientY - 28) + "px";
 }
 function hideTip() { tt.style.display = "none"; }
 
@@ -35,14 +37,16 @@ function hideTip() { tt.style.display = "none"; }
 function loadLiveStats() {
   if (typeof chrome === "undefined" || !chrome.storage) {
     // Demo mode when opened outside extension
-    applyStats({ currentWPM:61, burstWPM:89,
-                 consistencyScore:0.79, context:"blogging" });
+    applyStats({
+      currentWPM: 61, burstWPM: 89,
+      consistencyScore: 0.79, context: "blogging"
+    });
     $("userId").textContent = "usr_demo";
     loadArchetype("usr_demo");
     return;
   }
 
-  chrome.storage.local.get(["typingflow_stats","typingflow_user_id"], res => {
+  chrome.storage.local.get(["typingflow_stats", "typingflow_user_id"], res => {
     $("userId").textContent = res.typingflow_user_id || "—";
     if (res.typingflow_stats) applyStats(res.typingflow_stats);
     if (res.typingflow_user_id) loadArchetype(res.typingflow_user_id);
@@ -56,38 +60,38 @@ function loadLiveStats() {
 }
 
 function applyStats(s) {
-  $("kpiWpm").textContent       = s.currentWPM || 0;
-  $("kpiBurst").textContent      = s.burstWPM   || 0;
+  $("kpiWpm").textContent = s.currentWPM || 0;
+  $("kpiBurst").textContent = s.burstWPM || 0;
   $("kpiConsistency").textContent = s.consistencyScore
     ? (s.consistencyScore * 100).toFixed(0) + "%" : "—";
-  $("kpiWpmSub").textContent = (s.currentWPM||0) >= 80
+  $("kpiWpmSub").textContent = (s.currentWPM || 0) >= 80
     ? "🔥 Flow state active"
-    : (s.currentWPM||0) > 0 ? "⌨️ Session active" : "Waiting for input…";
+    : (s.currentWPM || 0) > 0 ? "⌨️ Session active" : "Waiting for input…";
 
-  if (s.currentWPM > 5) fetchRank(s.currentWPM, s.context||"blogging");
+  if (s.currentWPM > 5) fetchRank(s.currentWPM, s.context || "blogging");
 }
 
 // ── GLOBAL RANK ───────────────────────────────────────────────────────────────
 async function fetchRank(wpm, context) {
   const d = await post("/benchmarks/rank",
-    { platform:"chrome", context, wpm });
+    { platform: "chrome", context, wpm });
   if (!d) return;
   const labels = {
-    "top 1%":"Top 1% 🏆","top 5%":"Top 5% 🔥",
-    "top 10%":"Top 10% ⚡","top 25%":"Top 25% 💪",
-    "above average":"Avg+ 👍"
+    "top 1%": "Top 1% 🏆", "top 5%": "Top 5% 🔥",
+    "top 10%": "Top 10% ⚡", "top 25%": "Top 25% 💪",
+    "above average": "Avg+ 👍"
   };
-  $("kpiRank").textContent    = labels[d.label] || "Rising 🌱";
+  $("kpiRank").textContent = labels[d.label] || "Rising 🌱";
   $("kpiRankSub").textContent = `Faster than ${d.faster_than_pct}% globally`;
 }
 
 // ── ARCHETYPE CARD ────────────────────────────────────────────────────────────
 const ARCH_ICONS = {
-  "The Rapid Streamer"      : "⚡",
+  "The Rapid Streamer": "⚡",
   "The Deliberate Architect": "🏛️",
-  "The Bursty Coder"        : "💥",
-  "The Steady Workhorse"    : "🐂",
-  "The Sprinter"            : "🚀",
+  "The Bursty Coder": "💥",
+  "The Steady Workhorse": "🐂",
+  "The Sprinter": "🚀",
 };
 
 async function loadArchetype(userId) {
@@ -121,7 +125,7 @@ async function loadArchetype(userId) {
       }
     });
   } else {
-    $("archWpm").textContent         = "61";
+    $("archWpm").textContent = "61";
     $("archConsistency").textContent = "79%";
   }
 }
@@ -131,21 +135,21 @@ async function buildChart() {
   const d = await get("/benchmarks/hourly?platform=chrome");
   if (!d) return;
 
-  const rows   = d.hourly_trends;
-  const hours  = [...new Set(rows.map(r => r.hour_of_day))].sort((a,b)=>a-b);
+  const rows = d.hourly_trends;
+  const hours = [...new Set(rows.map(r => r.hour_of_day))].sort((a, b) => a - b);
   const global = hours.map(h => {
     const r = rows.find(x => x.hour_of_day === h);
     return r ? +r.avg_wpm.toFixed(1) : null;
   });
 
   // Simulate "your" line — slightly variable around global
-  const seed   = 0.7;
-  const yours  = global.map((v,i) =>
-    v ? +(v * (0.9 + Math.sin(i * seed) * 0.2 + Math.random()*0.1)).toFixed(1) : null
+  const seed = 0.7;
+  const yours = global.map((v, i) =>
+    v ? +(v * (0.9 + Math.sin(i * seed) * 0.2 + Math.random() * 0.1)).toFixed(1) : null
   );
 
   const labels = hours.map(h =>
-    h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h-12}pm`
+    h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`
   );
 
   new Chart($("hourlyChart"), {
@@ -195,19 +199,21 @@ async function buildChart() {
           titleColor: "#F5F5F5",
           bodyColor: "#888",
           titleFont: { family: "Space Mono" },
-          bodyFont:  { family: "Space Mono" },
+          bodyFont: { family: "Space Mono" },
         }
       },
       scales: {
         x: {
-          ticks: { color:"#555", font:{ family:"Space Mono", size:10 }, maxTicksLimit:12 },
-          grid:  { color:"#1a1a1a" },
+          ticks: { color: "#555", font: { family: "Space Mono", size: 10 }, maxTicksLimit: 12 },
+          grid: { color: "#1a1a1a" },
         },
         y: {
-          ticks: { color:"#555", font:{ family:"Space Mono", size:10 } },
-          grid:  { color:"#1a1a1a" },
-          title: { display:true, text:"WPM", color:"#444",
-                   font:{ family:"Space Mono", size:10 } }
+          ticks: { color: "#555", font: { family: "Space Mono", size: 10 } },
+          grid: { color: "#1a1a1a" },
+          title: {
+            display: true, text: "WPM", color: "#444",
+            font: { family: "Space Mono", size: 10 }
+          }
         }
       }
     }
@@ -240,14 +246,14 @@ async function buildHeatmap() {
 
   // Build 365-day grid
   const today = new Date();
-  const days  = 365;
-  const cols  = Math.ceil(days / 7);
+  const days = 365;
+  const cols = Math.ceil(days / 7);
 
   function level(w) {
     if (!w || w === 0) return "0";
-    if (w < 500)       return "1";
-    if (w < 1500)      return "2";
-    if (w < 3000)      return "3";
+    if (w < 500) return "1";
+    if (w < 1500) return "2";
+    if (w < 3000) return "3";
     return "4";
   }
 
@@ -271,7 +277,7 @@ async function buildHeatmap() {
     const col = document.createElement("div");
     col.className = "heatmap-col";
     for (let r = 0; r < 7; r++) {
-      const idx  = c * 7 + r;
+      const idx = c * 7 + r;
       const cell = document.createElement("div");
       cell.className = "heatmap-cell";
       if (padded[idx]) {
@@ -298,8 +304,8 @@ async function buildRankBars() {
 
   d.benchmarks.forEach(b => {
     // Simulate user WPM slightly above average
-    const userWpm  = +(b.avg_wpm * (1 + Math.random() * 0.3)).toFixed(0);
-    const pct      = Math.min(99, Math.max(1,
+    const userWpm = +(b.avg_wpm * (1 + Math.random() * 0.3)).toFixed(0);
+    const pct = Math.min(99, Math.max(1,
       ((userWpm - b.p25_wpm) / (b.p99_wpm - b.p25_wpm) * 100)
     )).toFixed(0);
 

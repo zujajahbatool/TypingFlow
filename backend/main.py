@@ -12,9 +12,13 @@ FastAPI server that exposes REST API endpoints for:
   7. /health             → Server health check
 """
 
-from fastapi             import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from filelock import FileLock
+from fastapi             import FastAPI, HTTPException, Depends
+from fastapi.security    import APIKeyHeader   
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic            import BaseModel
+from dotenv              import load_dotenv   
 import pickle
 import json
 import numpy  as np
@@ -27,7 +31,23 @@ MODEL_FILE      = "models/thinking_pause_model.pkl"
 ENCODER_FILE    = "models/platform_encoder.pkl"
 BENCHMARKS_DIR  = "analytics/benchmarks"
 SESSION_HISTORY_FILE = "data/session_history.json"
+SESSION_LOCK_FILE    = SESSION_HISTORY_FILE + ".lock"
+# Constant for WPM consistency window — issue #minor
+WPM_STD_DEV_WINDOW = 30
 # ───────────────────────────────────────────────────────────────────────────────
+
+load_dotenv()  # reads your .env file automatically
+APP_API_KEY = os.getenv("APP_API_KEY")
+if not APP_API_KEY:
+    raise RuntimeError("APP_API_KEY is not set. Add it to your .env file.")
+ 
+# This tells FastAPI to look for the key in the "X-API-Key" request header
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+ 
+async def verify_api_key(key: str = Depends(api_key_header)):
+    """Dependency: rejects any request that doesn't carry the correct API key."""
+    if key != APP_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
 
 app = FastAPI(
     title       = "TypingFlow AI API",
@@ -35,12 +55,17 @@ app = FastAPI(
     version     = "1.0.0"
 )
 
+ALLOWED_ORIGINS = [
+    "chrome-extension://iebbaoiidgaepkeegebanaedgpdicmjf",
+]
+ 
 # ── CORS — allows the Chrome Extension to call this API ───────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins  = ["*"],   # tighten this in production
-    allow_methods  = ["*"],
-    allow_headers  = ["*"],
+    allow_origins    = ALLOWED_ORIGINS,  # ← was ["*"], now locked to your extension
+    allow_credentials= True,
+    allow_methods    = ["*"],
+    allow_headers    = ["*", "X-API-Key"],
 )
 
 
@@ -57,18 +82,24 @@ archetypes   = {}
 thresholds   = {}
 hourly       = {}
 
-def load_history():
-    if Path(SESSION_HISTORY_FILE).exists():
-        with open(SESSION_HISTORY_FILE) as f:
-            return json.load(f)
+def load_history() -> dict:
+    lock = FileLock(SESSION_LOCK_FILE, timeout=5)
+    with lock:
+        if Path(SESSION_HISTORY_FILE).exists():
+            with open(SESSION_HISTORY_FILE) as f:
+                return json.load(f)
     return {}
 
-def save_history(history):
-    with open(SESSION_HISTORY_FILE, "w") as f:
-        json.dump(history, f, indent=2)
-        
-@app.on_event("startup")
-def load_assets():
+def save_history(history : dict) -> None:
+    lock = FileLock(SESSION_LOCK_FILE, timeout=5)
+    with lock:
+        Path(SESSION_HISTORY_FILE).parent.mkdir(parents=True, exist_ok=True)
+        with open(SESSION_HISTORY_FILE, "w") as f:
+            json.dump(history, f, indent=2)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global model, platform_enc, context_enc, feature_cols
     global benchmarks, archetypes, thresholds, hourly
 
@@ -99,7 +130,7 @@ def load_assets():
     hourly     = load_json("hourly_trends.json")
     print("  ✅ Benchmark data loaded")
     print("  🚀 Server ready!\n")
-
+    yield
 
 # ══════════════════════════════════════════════════════════════════════════════
 # REQUEST / RESPONSE SCHEMAS  (Pydantic validates incoming JSON automatically)
@@ -130,6 +161,7 @@ class SessionRequest(BaseModel):
     pause_duration_avg: float
     session_duration  : int
     words_written     : int
+    words_delta          : int = 0 #clients now send the delta of new words written since
     language          : str | None = None
 
 
@@ -156,7 +188,7 @@ def health_check():
 
 
 # ── 2. THINKING-PAUSE PREDICTION ──────────────────────────────────────────────
-@app.post("/predict/pause")
+@app.post("/predict/pause", dependencies=[Depends(verify_api_key)])
 def predict_pause(req: PauseRequest):
     """
     Core AI endpoint.
@@ -211,7 +243,7 @@ def predict_pause(req: PauseRequest):
 
 
 # ── 3. GLOBAL BENCHMARKS ──────────────────────────────────────────────────────
-@app.get("/benchmarks/global")
+@app.get("/benchmarks/global", dependencies=[Depends(verify_api_key)])
 def get_global_benchmarks(platform: str = None, context: str = None):
     """
     Returns global WPM stats.
@@ -231,7 +263,7 @@ def get_global_benchmarks(platform: str = None, context: str = None):
 
 
 # ── 4. PERCENTILE RANK ────────────────────────────────────────────────────────
-@app.post("/benchmarks/rank")
+@app.post("/benchmarks/rank", dependencies=[Depends(verify_api_key)])
 def get_percentile_rank(req: RankRequest):
     """
     The 'You are in the top X%' feature.
@@ -288,7 +320,7 @@ def get_percentile_rank(req: RankRequest):
 
 
 # ── 5. HOURLY TRENDS ──────────────────────────────────────────────────────────
-@app.get("/benchmarks/hourly")
+@app.get("/benchmarks/hourly", dependencies=[Depends(verify_api_key)])
 def get_hourly_trends(platform: str = None):
     """Returns average WPM by hour of day — used for the dashboard chart."""
     data = hourly
@@ -298,7 +330,7 @@ def get_hourly_trends(platform: str = None):
 
 
 # ── 6. USER ARCHETYPE ─────────────────────────────────────────────────────────
-@app.get("/user/archetype/{user_id}")
+@app.get("/user/archetype/{user_id}", dependencies=[Depends(verify_api_key)])
 def get_user_archetype(user_id: str):
     """Returns the typing archetype for a given user."""
     match = next(
@@ -331,7 +363,7 @@ def get_user_archetype(user_id: str):
 
 
 # ── 7. SAVE SESSION ───────────────────────────────────────────────────────────
-@app.post("/session/save")
+@app.post("/session/save", dependencies=[Depends(verify_api_key)])
 def save_session(req: SessionRequest):
     # ── Compute rank ──────────────────────────────────────────────────
     match = next(
@@ -353,8 +385,9 @@ def save_session(req: SessionRequest):
     if req.user_id not in history:
         history[req.user_id] = {}
 
+    delta      = req.words_delta if req.words_delta > 0 else req.words_written
     prev_words = history[req.user_id].get(today, 0)
-    history[req.user_id][today] = prev_words + req.words_written
+    history[req.user_id][today] = prev_words + delta
     save_history(history)
 
     return {
@@ -366,7 +399,7 @@ def save_session(req: SessionRequest):
     }
 
 # ──8. USER SESSION HISTORY (for heatmap) ────────────────────────────────────────
-@app.get("/user/history/{user_id}")
+@app.get("/user/history/{user_id}", dependencies=[Depends(verify_api_key)])
 def get_user_history(user_id: str):
     history = load_history()
     user_data = history.get(user_id, {})

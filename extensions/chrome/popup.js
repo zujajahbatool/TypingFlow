@@ -30,10 +30,17 @@ const rankBadge = document.getElementById("rankBadge");
 let API_KEY = null; // Loaded at runtime
 
 // Load API key from storage on popup open
-chrome.storage.sync.get(["typingflow_api_key"], (result) => {
-  API_KEY = result.typingflow_api_key || "paste-your-generated-key-here";
+chrome.storage.sync.get(["apiKey"], (result) => {
+  API_KEY = result.apiKey || "paste-your-generated-key-here";
   if (API_KEY === null || API_KEY === "paste-your-generated-key-here") {
     console.warn("[TypingFlow] API key not configured in popup.");
+    // Show the settings panel so the user can enter it now
+    const settingsPanel = document.getElementById("settingsPanel");
+    if (settingsPanel) settingsPanel.style.display = "block";
+  } else {
+    // Pre-fill the input with masked key for confirmation
+    const keyInput = document.getElementById("apiKeyInput");
+    if (keyInput) keyInput.placeholder = "Key saved ✓";
   }
 });
 // ── GAUGE CONFIG ──────────────────────────────────────────────────────────────
@@ -204,3 +211,55 @@ document.getElementById("dashLink").addEventListener("click", () => {
     url: chrome.runtime.getURL("dashboard.html")
   });
 });
+
+// ── API KEY SETTINGS ──────────────────────────────────────────────────────────
+function saveApiKey() {
+  const input = document.getElementById("apiKeyInput");
+  const feedback = document.getElementById("keyFeedback");
+  const key = input ? input.value.trim() : "";
+
+  if (!key || key.length < 8) {
+    if (feedback) {
+      feedback.textContent = "⚠ Key too short";
+      feedback.style.color = "#ff6b6b";
+    }
+    return;
+  }
+
+  chrome.storage.sync.set({ apiKey: key }, () => {
+    API_KEY = key;
+    input.value = "";
+    input.placeholder = "Key saved ✓";
+    if (feedback) {
+      feedback.textContent = "✓ API key saved!";
+      feedback.style.color = "#2ED573";
+      setTimeout(() => { feedback.textContent = ""; }, 3000);
+    }
+    // Hide settings panel after save
+    const panel = document.getElementById("settingsPanel");
+    if (panel) panel.style.display = "none";
+  });
+}
+
+// Settings gear toggle
+const settingsToggle = document.getElementById("settingsToggle");
+if (settingsToggle) {
+  settingsToggle.addEventListener("click", () => {
+    const panel = document.getElementById("settingsPanel");
+    if (panel) panel.style.display = panel.style.display === "none" ? "block" : "none";
+  });
+}
+
+// Save button
+const saveKeyBtn = document.getElementById("saveKeyBtn");
+if (saveKeyBtn) {
+  saveKeyBtn.addEventListener("click", saveApiKey);
+}
+
+// Allow Enter key to save
+const apiKeyInput = document.getElementById("apiKeyInput");
+if (apiKeyInput) {
+  apiKeyInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") saveApiKey();
+  });
+}

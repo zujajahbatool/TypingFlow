@@ -57,8 +57,8 @@ let API_KEY = null; // Loaded at runtime from chrome.storage
 // ── RUNTIME API KEY INITIALIZATION ───────────────────────────────────────────
 function initializeApiKey() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(["typingflow_api_key"], (result) => {
-      API_KEY = result.typingflow_api_key || "paste-your-generated-key-here";
+    chrome.storage.sync.get(["apiKey"], (result) => {
+      API_KEY = result.apiKey || "paste-your-generated-key-here";
       if (API_KEY === null || API_KEY === "paste-your-generated-key-here") {
         console.error("[TypingFlow] WARNING: API key not configured. Please set your API key in extension settings.");
       }
@@ -83,6 +83,9 @@ function detectContext() {
     hostname.includes("x.com")) return "chat";
   if (hostname.includes("mail.google.com")) return "email";
   if (hostname.includes("docs.google.com")) return "blogging";
+  if (hostname.includes("gemini.google.com")) return "blogging";
+  if (hostname.includes("claude.google.com")) return "blogging";
+  if (hostname.includes("bard.google.com")) return "blogging";
   return "blogging"; // default
 }
 
@@ -145,6 +148,9 @@ document.addEventListener("keydown", (event) => {
   broadcastStats();
 });
 
+// ── ATTACH KEYSTROKE LISTENER ─────────────────────────────────────────────────
+// FIX: Use { capture: true } so we intercept keystrokes at the capture phase
+document.addEventListener("keydown", handleKeydown, { capture: true });
 
 // ── WPM CALCULATION ───────────────────────────────────────────────────────────
 function updateWPM(now) {
@@ -223,6 +229,7 @@ setInterval(() => {
         resetSession(); // Reset regardless of save success
       });
 
+  }
 }, PAUSE_CHECK_MS);
 
 

@@ -279,6 +279,80 @@
         font-size: 12px;
         color: #555;
       }
+
+      /* ── SETTINGS GEAR ───────────────────────────────────────────────── */
+      .settings-btn {
+        background: none;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        color: #555;
+        font-size: 14px;
+        width: 26px;
+        height: 26px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+      }
+      .settings-btn:hover { border-color: #00f5ff; color: #00f5ff; }
+
+      /* ── API KEY PANEL ───────────────────────────────────────────────── */
+      .settings-panel {
+        display: none;
+        background: #111;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+      }
+      .settings-label {
+        font-size: 10px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+      .settings-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .key-input {
+        flex: 1;
+        background: #0a0a0a;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        color: #f5f5f5;
+        font-size: 11px;
+        font-family: monospace;
+        padding: 6px 10px;
+        outline: none;
+        transition: border-color 0.2s;
+        min-width: 0;
+      }
+      .key-input:focus { border-color: #00f5ff; }
+      .key-input::placeholder { color: #444; }
+      .save-btn {
+        background: #00f5ff18;
+        border: 1px solid #00f5ff44;
+        color: #00f5ff;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+      .save-btn:hover { background: #00f5ff30; }
+      .key-feedback {
+        font-size: 10px;
+        margin-top: 6px;
+        min-height: 14px;
+      }
     </style>
   </head>
   <body>
@@ -288,7 +362,19 @@
       <div style="display: flex; align-items: center; gap: 8px">
         <span id="contextTag" class="context-tag">idle</span>
         <div id="statusDot" class="status-dot"></div>
+        <button id="settingsToggle" class="settings-btn" title="API Key Settings">⚙</button>
       </div>
+    </div>
+
+    <!-- API KEY SETTINGS PANEL -->
+    <div id="settingsPanel" class="settings-panel">
+      <div class="settings-label">API Key</div>
+      <div class="settings-row">
+        <input id="apiKeyInput" class="key-input" type="password"
+               placeholder="Paste your API key…" autocomplete="off" spellcheck="false"/>
+        <button id="saveKeyBtn" class="save-btn">SAVE</button>
+      </div>
+      <div id="keyFeedback" class="key-feedback"></div>
     </div>
 
     <!-- SPEEDOMETER GAUGE -->

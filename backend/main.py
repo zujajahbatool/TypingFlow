@@ -27,16 +27,19 @@ import json
 from pathlib import Path
 
 # ── CONFIG ─────────────────────────────────────────────────────────────────────
-MODEL_FILE      = "models/thinking_pause_model.pkl"
-ENCODER_FILE    = "models/platform_encoder.pkl"
-BENCHMARKS_DIR  = "analytics/benchmarks"
-SESSION_HISTORY_FILE = "data/session_history.json"
-SESSION_LOCK_FILE    = SESSION_HISTORY_FILE + ".lock"
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_FILE      = BASE_DIR / "models" / "thinking_pause_model.pkl"
+ENCODER_FILE    = BASE_DIR / "models" / "platform_encoder.pkl"
+BENCHMARKS_DIR  = BASE_DIR / "analytics" / "benchmarks"
+SESSION_HISTORY_FILE = BASE_DIR / "data" / "session_history.json"
+SESSION_LOCK_FILE    = Path(str(SESSION_HISTORY_FILE) + ".lock")
 # Constant for WPM consistency window — issue #minor
 WPM_STD_DEV_WINDOW = 30
 # ───────────────────────────────────────────────────────────────────────────────
 
-load_dotenv()  # reads your .env file automatically
+# Load the repo-root .env file explicitly so there is a single known source
+# for APP_API_KEY and duplicate .env files do not cause inconsistent values.
+load_dotenv(BASE_DIR / ".env")
 APP_API_KEY = os.getenv("APP_API_KEY")
 if not APP_API_KEY:
     raise RuntimeError("APP_API_KEY is not set. Add it to your .env file.")
@@ -71,7 +74,7 @@ async def lifespan(app: FastAPI):
 
     # ── Load benchmark JSONs ───────────────────────────────────────────────────
     def load_json(filename):
-        path = os.path.join(BENCHMARKS_DIR, filename)
+        path = BENCHMARKS_DIR / filename
         with open(path) as f:
             return json.load(f)
 
@@ -132,40 +135,6 @@ def save_history(history : dict) -> None:
         with open(SESSION_HISTORY_FILE, "w") as f:
             json.dump(history, f, indent=2)
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global model, platform_enc, context_enc, feature_cols
-    global benchmarks, archetypes, thresholds, hourly
-
-    print("\n  TypingFlow AI — Loading assets...")
-
-    # ── Load ML model ─────────────────────────────────────────────────────────
-    with open(MODEL_FILE, "rb") as f:
-        model = pickle.load(f)
-    print("  ✅ Thinking-Pause model loaded")
-
-    # ── Load encoders ─────────────────────────────────────────────────────────
-    with open(ENCODER_FILE, "rb") as f:
-        enc_data     = pickle.load(f)
-        platform_enc = enc_data["platform_enc"]
-        context_enc  = enc_data["context_enc"]
-        feature_cols = enc_data["feature_cols"]
-    print("  ✅ Encoders loaded")
-
-    # ── Load benchmark JSONs ───────────────────────────────────────────────────
-    def load_json(filename):
-        path = os.path.join(BENCHMARKS_DIR, filename)
-        with open(path) as f:
-            return json.load(f)
-
-    benchmarks = load_json("global_benchmarks.json")
-    archetypes = load_json("user_archetypes.json")
-    thresholds = load_json("top_performer_thresholds.json")
-    hourly     = load_json("hourly_trends.json")
-    print("  ✅ Benchmark data loaded")
-    print("  🚀 Server ready!\n")
-    yield
 
 # ══════════════════════════════════════════════════════════════════════════════
 # REQUEST / RESPONSE SCHEMAS  (Pydantic validates incoming JSON automatically)

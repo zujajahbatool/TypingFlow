@@ -2,7 +2,7 @@
   "name": "typingflow-ai",
   "displayName": "TypingFlow AI",
   "description": "Real-time WPM tracker with AI thinking-pause detection and global benchmarking",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "typingflowai",
   "author": {
     "name": "Zujajah Batool",
@@ -36,6 +36,7 @@
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
+  "icon": "./icon128.png",
   "contributes": {
     "commands": [
       {

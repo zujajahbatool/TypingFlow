@@ -2,8 +2,8 @@ const API = "http://127.0.0.1:8000";
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-let tt = null; // Initialized after DOM ready
-let API_KEY = null; // Loaded at runtime from chrome.storage
+let tt = null;
+let API_KEY = null;
 
 // Initialize tooltip and API key after DOM ready
 function initializeDOM() {
@@ -16,8 +16,14 @@ function initializeDOM() {
 // Load API key from storage
 function initializeApiKey() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(["typingflow_api_key"], (result) => {
-      API_KEY = result.typingflow_api_key || "paste-your-generated-key-here";
+    if (typeof chrome === "undefined" || !chrome.storage) {
+      // Running outside the extension (e.g. a browser tab for testing)
+      API_KEY = "demo";
+      resolve();
+      return;
+    }
+    chrome.storage.sync.get(["apiKey"], (result) => {
+      API_KEY = result.apiKey || "paste-your-generated-key-here";
       if (API_KEY === null || API_KEY === "paste-your-generated-key-here") {
         console.error("[TypingFlow] WARNING: API key not configured in dashboard.");
       }
@@ -146,16 +152,18 @@ async function loadArchetype(userId) {
   const icon = ARCH_ICONS[d.archetype] || "🎯";
   $("archetypeCard").innerHTML = `
     <span class="arch-icon">${icon}</span>
-    <div class="arch-name">${d.archetype}</div>
-    <div class="arch-desc">${d.description || "Complete more sessions to reveal your archetype."}</div>
-    <div class="arch-stats">
-      <div class="arch-stat">
-        <div class="arch-stat-val" id="archWpm">—</div>
-        <div class="arch-stat-lbl">Avg WPM</div>
-      </div>
-      <div class="arch-stat">
-        <div class="arch-stat-val" id="archConsistency">—</div>
-        <div class="arch-stat-lbl">Consistency</div>
+    <div class="arch-content">
+      <div class="arch-name">${d.archetype}</div>
+      <div class="arch-desc">${d.description || "Complete more sessions to reveal your archetype."}</div>
+      <div class="arch-stats">
+        <div class="arch-stat">
+          <div class="arch-stat-val" id="archWpm">—</div>
+          <div class="arch-stat-lbl">Avg WPM</div>
+        </div>
+        <div class="arch-stat">
+          <div class="arch-stat-val" id="archConsistency">—</div>
+          <div class="arch-stat-lbl">Consistency</div>
+        </div>
       </div>
     </div>
   `;
@@ -206,9 +214,10 @@ async function buildChart() {
           label: "You",
           data: yours,
           borderColor: "#00F5FF",
-          backgroundColor: "rgba(0,245,255,0.08)",
-          borderWidth: 2.5,
-          pointRadius: 3,
+          backgroundColor: "rgba(0,245,255,0.06)",
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 5,
           pointBackgroundColor: "#00F5FF",
           tension: 0.4,
           fill: true,
@@ -231,10 +240,15 @@ async function buildChart() {
       interaction: { mode: "index", intersect: false },
       plugins: {
         legend: {
+          position: "bottom",
+          align: "end",
           labels: {
-            color: "#888",
-            font: { family: "Space Mono", size: 11 },
-            boxWidth: 20,
+            color: "#666",
+            font: { family: "Space Mono", size: 10 },
+            boxWidth: 14,
+            boxHeight: 2,
+            padding: 10,
+            usePointStyle: false,
           }
         },
         tooltip: {
@@ -243,23 +257,37 @@ async function buildChart() {
           borderWidth: 1,
           titleColor: "#F5F5F5",
           bodyColor: "#888",
-          titleFont: { family: "Space Mono" },
-          bodyFont: { family: "Space Mono" },
+          titleFont: { family: "Space Mono", size: 10 },
+          bodyFont: { family: "Space Mono", size: 10 },
         }
       },
       scales: {
         x: {
-          ticks: { color: "#555", font: { family: "Space Mono", size: 10 }, maxTicksLimit: 12 },
-          grid: { color: "#1a1a1a" },
+          ticks: {
+            color: "#444",
+            font: { family: "Space Mono", size: 9 },
+            maxTicksLimit: 8,
+            maxRotation: 0,  /* never rotate labels */
+            autoSkip: true,
+          },
+          grid: { color: "#161616" },
         },
         y: {
-          ticks: { color: "#555", font: { family: "Space Mono", size: 10 } },
-          grid: { color: "#1a1a1a" },
+          ticks: { color: "#444", font: { family: "Space Mono", size: 9 } },
+          grid: { color: "#161616" },
           title: {
-            display: true, text: "WPM", color: "#444",
-            font: { family: "Space Mono", size: 10 }
+            display: true, text: "WPM", color: "#3a3a3a",
+            font: { family: "Space Mono", size: 9 }
           }
         }
+      },
+      onResize(chart, size) {
+        /* Fewer ticks on narrow screens so labels never pile up */
+        const limit = size.width < 300 ? 4 : size.width < 500 ? 6 : 8;
+        chart.options.scales.x.ticks.maxTicksLimit = limit;
+        /* Show/hide legend on very small charts */
+        chart.options.plugins.legend.display = size.width >= 200;
+        chart.update("none");
       }
     }
   });
@@ -350,7 +378,7 @@ async function buildRankBars() {
   d.benchmarks.forEach(b => {
     // Simulate user WPM slightly above average
     const userWpm = +(b.avg_wpm * (1 + Math.random() * 0.3)).toFixed(0);
-    
+
     // Guard against division by zero
     const denom = (b.p99_wpm - b.p25_wpm);
     let pct;
@@ -416,8 +444,13 @@ async function buildBenchTable() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadLiveStats();
-buildChart();
-buildHeatmap();
-buildRankBars();
-buildBenchTable();
+document.addEventListener("DOMContentLoaded", async () => {
+  initializeDOM();
+  await initializeApiKey();
+
+  loadLiveStats();
+  buildChart();
+  buildHeatmap();
+  buildRankBars();
+  buildBenchTable();
+});

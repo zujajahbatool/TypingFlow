@@ -1,7 +1,10 @@
-data/typing_sessions.parquet
+data/
 *.pkl
 __pycache__/
 .env
 node_modules/
+*.vsix
 extensions/vscode/typingflow-ai/out/
 extensions/vscode/typingflow-ai/.vscode-test/
+vsc-extensions/typingflow-ai/out/
+extensions/vscode/typingflow-ai/vsc-extension-quickstart.md
